@@ -18,7 +18,7 @@
                  [puppetlabs/comidi "0.1.2" :exclusions [clj-time]]]
 
   :profiles {:dev {:source-paths ["dev"]
-                   :dependencies [[org.clojure/tools.namespace "0.2.4"]
+                   :dependencies [[org.clojure/tools.namespace "0.2.5"]
                                   [puppetlabs/trapperkeeper ~tk-version
                                    :classifier "test"
                                    :exclusions [clj-time org.clojure/tools.macro]]
