@@ -22,7 +22,8 @@
                                   [puppetlabs/trapperkeeper ~tk-version
                                    :classifier "test"
                                    :exclusions [clj-time org.clojure/tools.macro]]
-                                  [puppetlabs/kitchensink ~ks-version :classifier "test"]]}}
+                                  [puppetlabs/kitchensink ~ks-version :classifier "test"]
+                                  [puppetlabs/http-client "0.4.4" :exclusions [commons-io]]]}}
 
   :aliases {"tk" ["trampoline" "run" "--config" "dev-resources/config.conf"]}
 
