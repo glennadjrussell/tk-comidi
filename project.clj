@@ -25,6 +25,8 @@
                                   [puppetlabs/kitchensink ~ks-version :classifier "test"]
                                   [puppetlabs/http-client "0.4.4" :exclusions [commons-io]]]}}
 
+  :repl-options {:init-ns user}
+
   :aliases {"tk" ["trampoline" "run" "--config" "dev-resources/config.conf"]}
 
   :main puppetlabs.trapperkeeper.main
