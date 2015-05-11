@@ -16,7 +16,9 @@ FIXME: listing of options this app accepts.
 
 ## Examples
 
-...
+### Testing out schema validation
+
+    $ curl -X PUT -d '{"id":1234,"environment":"production"}' http://127.0.0.1:8080/api/environment/test/thisisatest
 
 ### Bugs
 
