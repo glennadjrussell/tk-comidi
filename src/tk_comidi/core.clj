@@ -83,18 +83,22 @@
   [path bindings]
   `(comidi/GET ~path ~bindings request {}))
 
+(defn maroute []
+  (comidi/GET "/" request {}))
+
 ;;
 ;; comidi-route
 ;;
 (defn comidi-route [path route-map]
   (if (map? route-map)
-    (doseq [[method method-def] route-map]
-      (println method)
+    (for [[method method-def] route-map]
       (case method
 ;;        :get (comidi/GET path (route-parameters (:parameters method-def)) request {})
 ;;        :post (comidi/POST path (route-parameters (:parameters method-def)) request {})))))
-        :get '(route-it path [])
-        :post '(route-it path [])))))
+        :get '(comidi/GET path [] request {})
+        :post '(comidi/GET path [] request {})))))
+        ;;:get '(route-it path [])
+        ;;:post '(route-it path [])))))
 
 ;;
 ;;
@@ -102,9 +106,11 @@
 (defn comidi-app-from-swagger [app]
   (if (map? app)
     (let [paths (:paths app)]
-      (doseq [[path route-config] paths]
-        (comidi-route path route-config)))
-    (println "ERROR: Invalid input to app generator")))
+      (println paths)
+      (comidi/routes
+        (for [[path route-config] paths]
+          (comidi-route path route-config))))
+    (println "Not a map, derp")))
 
 ;;
 ;; Site-map
@@ -122,7 +128,7 @@
            "/deploy/:environment" {:post {}}}})
 
 (defn comidi-app [json]
-  (comidi/context ""
+  (comidi/context "/test"
     (comidi-app-from-swagger root-uri-swagger)))
 
 ;;
@@ -186,6 +192,7 @@
           allroutes (build-routes path)
           app (-> (comidi/routes->handler allroutes))]
       (add-ring-handler this app) (comidi-app root-uri-swagger)) context)
+;;          (add-ring-handler this app) (build-routes "")) context)
 
   (stop [this context]
         (log/info "Shutting down echo-service") context))

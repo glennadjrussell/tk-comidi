@@ -4,6 +4,38 @@
             [schema.coerce :as coerce]
             [schema.core :as schema]))
 
+;;
+;; Note to self:
+;; If we are truly HATEOAS, then uri generation should be incidental. The important element are the link relations
+;;
+(def env-record
+  {:name "env"
+   :link app-record})
+
+(def inst-record
+  {:name "instance"})
+
+(def app-record
+  {:name "app"
+   :kind "application"
+   :link inst-record
+   })
+
+(schema/defschema links
+  {:rel s/Str
+   :method (schema/enum :get :post)
+   :href s/Str})
+
+(schema/defschema settings
+  {:modulepath [s/Str]
+   :manifest s/Str
+   :environment_timeout s/Int
+   :config_version s/Str})
+
+(schema/defschema environment
+  {:settings settings
+   })
+
 (defmacro route-it
   [path bindings]
   `(comidi/GET ~path ~bindings request {}))
