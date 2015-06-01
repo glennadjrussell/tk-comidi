@@ -15,7 +15,8 @@
                   :exclusions [clj-time org.clojure/tools.macro]]
                  [puppetlabs/trapperkeeper-webserver-jetty9 ~tk-jetty9-version :exclusions [clj-time]]
                  [puppetlabs/kitchensink ~ks-version]
-                 [puppetlabs/comidi "0.1.2" :exclusions [clj-time]]]
+                 [puppetlabs/comidi "0.1.2" :exclusions [clj-time]]
+                 [slingshot "0.12.2"]]
 
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.5"]

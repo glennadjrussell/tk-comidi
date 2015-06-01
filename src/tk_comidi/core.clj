@@ -4,40 +4,8 @@
             [puppetlabs.comidi :as comidi]
             [puppetlabs.trapperkeeper.core :refer [defservice]]
             [schema.coerce :as coerce]
-            [schema.core :as s]))
-
-;;
-;; Macros
-;;
-;; Need to be able to render apis that look like the following:
-;;
-;; {
-;;   "result": "someresult",
-;;   "links": [
-;;     {
-;;       "name": "resultone",
-;;       "href": "/results/resultone"
-;;     }
-;;   ]
-;; }
-;;(defn render-endpoint [props link-fn handler-fn])
-;;(defn render-link [path handler-fn]) ;; this should be a macro that results in a comidi route
-;;(defn render-resource [res-def])
-
-;;(defmacro link-to [rel uri handler-fn]
-;;  `(GET ~uri [] ~handler-fn))
-;;  uri)
-
-;;(defn link-to-resource [ep]
-;;  (if (map? ep) (:uri ep)))
-
-;;(defn link [rel method ep]
-;;  (if (map? ep) (:uri ep)))
-
-;;
-;; Takes a map of the api, and builds the necessary route map
-;;(defmacro defapp [api-map]
-;;  `(if (map? api-map) (println "Hey")))
+            [schema.core :as s]
+            [slingshot.slingshot :as sling]))
 
 ;;
 ;; Schemas
@@ -49,72 +17,21 @@
 (def parse-job
   (coerce/coercer Job coerce/json-coercion-matcher))
 
-;;(def application-routes
-;;  (vector
-;;    (comidi/GET "/" request
-;;                {:status 200 :body "This is a result"})
-;;    (comidi/GET ["/environments" :environment "/instances"] [environment])))
-
-;;
-;; Idea is to build mini apps
-;;
-;; What would this look like if it was returned?
-;;
-;;(defn instance-endpoint [id]
-;;  {:self (str "/instance/" id)
-;;   :stop (str "/instance/:id" (fn [x] x))})
-
-;;(def application-endpoint
-;;  {:uri "applications"
-;;   :description "Returns a list of all applications"
-;;   :routes application-routes
-;;   :instances (link-to-resource instance-endpoint)})
-
-;;(defn deploy-fn [])
-;;(defn undeploy-fn [])
-
-(defn route-parameters [parameters]
-  (let [path-parameter (:path parameters)]
-    (vec
-      (doseq [[id param] path-parameter]
-        id))))
-
-(defmacro route-it
-  [path bindings]
-  `(comidi/GET ~path ~bindings request {}))
-
-(defn maroute []
-  (comidi/GET "/" request {}))
-
-;;
-;; comidi-route
-;;
-(defn comidi-route [path route-map]
-  (if (map? route-map)
-    (for [[method method-def] route-map]
-      (case method
-;;        :get (comidi/GET path (route-parameters (:parameters method-def)) request {})
-;;        :post (comidi/POST path (route-parameters (:parameters method-def)) request {})))))
-        :get '(comidi/GET path [] request {})
-        :post '(comidi/GET path [] request {})))))
-        ;;:get '(route-it path [])
-        ;;:post '(route-it path [])))))
-
-;;
-;;
-;;
-(defn comidi-app-from-swagger [app]
+(defn generate-comidi-routes [app]
   (if (map? app)
     (let [paths (:paths app)]
-      (println paths)
-      (comidi/routes
+      (comidi/context "/api"
         (for [[path route-config] paths]
-;;          (comidi-route path route-config))))
           (for [[method method-def] route-config]
             (case method
-              :get '(comidi/GET path request {})
-              :post '(comidi/GET path request {}))))))
-    (println "Not a map, derp")))
+              :get `(comidi/GET ~path request {})
+              :post `(comidi/GET ~path request {}))))))
+    (sling/throw+ {:message "Parameter isn't a map"})))
+
+(defn comidi-app-from-swagger [app]
+    (let [paths (:paths app)]
+      (comidi/context "/api"
+          (comidi/routes (generate-comidi-routes app)))))
 
 ;;
 ;; Site-map
@@ -163,10 +80,22 @@
 ;;    :description "An example application using trapperkeeper and comidi"}
 ;;   :links application-endpoint})
 
+(defn do-me-do-me [] (println "Deploy function"))
+
+(def deploy-cmd
+  {:request-params [{:app s/Str}]
+   :body-params [{:tgt s/Str}]
+   :return Job
+   })
+
+(defmacro defcommand [path & body]
+  `(comidi/GET ~path request ~body))
+
 (defn build-routes
   [path]
   (comidi/context path
     (comidi/routes
+;;      (defcommand "/command/deploy" {:status 200 :body "Test"})
       (comidi/GET "/gen" request
                   {:status 200 :body (json/generate-string root-uri-swagger)})
       (comidi/GET ["/environment/" :envid "/interfaces"] [envid]
@@ -183,20 +112,17 @@
                   (println (str "Regex matched " (:params request)))
                   (let [body (slurp (:body request))
                         json-body (json/parse-string body (fn [k] (keyword k)))]
-                    (println json-body)
-                    (println (parse-job json-body)))
-
                   {:orig-req request
-                   :rest (-> request :route-params :rest)}))))
+                   :rest (-> request :route-params :rest)})))))
 
 (defservice api-service
   [[:WebroutingService add-ring-handler get-route]]
   (init [this context]
     (let [path (get-route this)
           allroutes (build-routes path)
-          app (-> (comidi/routes->handler allroutes))]
-      (add-ring-handler this app) (comidi-app root-uri-swagger)) context)
-;;          (add-ring-handler this app) (build-routes "")) context)
+          ;;app (comidi/routes->handler allroutes)]
+          app (comidi-app-from-swagger root-uri-swagger)]
+      (add-ring-handler this app)) context)
 
   (stop [this context]
         (log/info "Shutting down echo-service") context))
