@@ -109,7 +109,11 @@
       (println paths)
       (comidi/routes
         (for [[path route-config] paths]
-          (comidi-route path route-config))))
+;;          (comidi-route path route-config))))
+          (for [[method method-def] route-config]
+            (case method
+              :get '(comidi/GET path request {})
+              :post '(comidi/GET path request {}))))))
     (println "Not a map, derp")))
 
 ;;
